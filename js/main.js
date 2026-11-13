@@ -1,5 +1,5 @@
 import { state, save, resetProgress, usageToday } from './store.js';
-import { sfx, say, sayAll, sayAfter, stopSpeech, unlockAudio, hasVoice } from './audio.js';
+import { sfx, say, sayAll, sayAfter, stopSpeech, unlockAudio, hasVoice, englishVoices } from './audio.js';
 import { bigConfetti, sparkleAt, balloons, wobble, bounce } from './fx.js';
 import { character, CAST } from './characters.js';
 import { PRAISE, pick } from './words.js';
@@ -305,6 +305,11 @@ function settingsModal() {
     <div class="kids"></div>
     <div class="row"><label>Sound effects</label><button class="toggle" data-k="sound"></button></div>
     <div class="row"><label>Spoken instructions</label><button class="toggle" data-k="voice"></button></div>
+    <div class="row"><label>Voice<div class="note vnote">South African English voices are listed first.</div></label>
+      <select class="voicepick" style="max-width:230px"></select></div>
+    <div class="row"><label>Talking speed</label>
+      <div class="seg rate"><button data-v="0.72">Slow</button><button data-v="0.85">Gentle</button><button data-v="0.95">Normal</button></div>
+      <button class="btn ghost vtest">▶ Test</button></div>
     <div class="row"><label>Show words on screen<div class="note">Captions of everything that is said. "Auto" shows them when the tablet can't speak.</div></label>
       <div class="seg caps"><button data-v="auto">Auto</button><button data-v="on">On</button><button data-v="off">Off</button></div></div>
     <div class="row"><label>Daily play time<div class="note used"></div></label>
@@ -336,6 +341,21 @@ function settingsModal() {
     m.querySelectorAll('[data-k]').forEach(b => b.classList.toggle('on', !!S[b.dataset.k]));
   };
   m.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { S[b.dataset.k] = !S[b.dataset.k]; save(); paint(); });
+  const vp = m.querySelector('.voicepick');
+  const fillVoices = () => {
+    const list = englishVoices();
+    vp.innerHTML = `<option value="">Best available (automatic)</option>` + list.map(v => `<option value="${esc(v.name)}">${esc(v.name)} · ${esc(v.lang)}</option>`).join('');
+    vp.value = S.voiceName || '';
+    if (!list.length) m.querySelector('.vnote').textContent = 'No voices found on this tablet yet. Check the tablet\'s text-to-speech settings.';
+    else if (!list.some(v => /en[-_]ZA/i.test(v.lang))) m.querySelector('.vnote').textContent = 'No South African voice on this tablet yet. See below to add one.';
+  };
+  fillVoices();
+  if (window.speechSynthesis) speechSynthesis.addEventListener?.('voiceschanged', fillVoices);
+  vp.onchange = () => { S.voiceName = vp.value; save(); say('Hello! Shall we play a game?'); };
+  const paintRate = () => m.querySelectorAll('.rate button').forEach(b => b.classList.toggle('on', +b.dataset.v === (S.rate || 0.85)));
+  m.querySelectorAll('.rate button').forEach(b => b.onclick = () => { S.rate = +b.dataset.v; save(); paintRate(); say('Hello! Shall we play a game?'); });
+  paintRate();
+  m.querySelector('.vtest').onclick = () => say('Hello! Well done, you are a superstar! Shall we play a game?');
   const paintCaps = () => m.querySelectorAll('.caps button').forEach(b => b.classList.toggle('on', b.dataset.v === (S.captions || 'auto')));
   m.querySelectorAll('.caps button').forEach(b => b.onclick = () => { S.captions = b.dataset.v; save(); paintCaps(); });
   paintCaps();

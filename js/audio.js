@@ -70,23 +70,40 @@ function loadVoices() { try { voices = synth ? synth.getVoices() : []; } catch {
 loadVoices();
 if (synth && 'onvoiceschanged' in synth) synth.onvoiceschanged = loadVoices;
 
+// South African English first, then other English voices.
 const PREF = {
-  en: ['en-GB', 'en-ZA', 'en-AU', 'en-IE', 'en-US', 'en'],
-  pt: ['pt-PT', 'pt'],            // European Portuguese first; Brazilian as a fallback
+  en: ['en-ZA', 'en-GB', 'en-AU', 'en-IE', 'en-NZ', 'en-US', 'en'],
+  pt: ['pt-PT', 'pt'],
   af: ['af-ZA', 'af'],
 };
+// Higher-quality voices usually have one of these words in their name.
+const NICE = /(enhanced|premium|natural|neural|siri|wavenet|studio)/i;
+// Voices that sound silly or robotic for children's instructions.
+const AVOID = /(novelty|bells|bubbles|boing|cellos|whisper|zarvox|trinoids|bahh|albert|bad news|good news|jester|organ|superstar|wobble|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley)/i;
+
+const norm = v => v.lang.replace('_', '-').toLowerCase();
+
+/** All usable English voices, best first (for the grown-up voice picker). */
+export function englishVoices() {
+  if (!voices.length) loadVoices();
+  const rank = v => {
+    const i = PREF.en.findIndex(c => norm(v).startsWith(c.toLowerCase()));
+    return (i < 0 ? 9 : i) * 10 - (NICE.test(v.name) ? 5 : 0) - (v.localService ? 1 : 0);
+  };
+  return voices.filter(v => norm(v).startsWith('en') && !AVOID.test(v.name)).sort((a, b) => rank(a) - rank(b));
+}
 
 export function voiceFor(lang) {
   if (!voices.length) loadVoices();
+  if (lang === 'en') {
+    const chosen = state.settings.voiceName && voices.find(v => v.name === state.settings.voiceName);
+    if (chosen) return chosen;
+    return englishVoices()[0] || null;
+  }
   for (const code of PREF[lang] || [lang]) {
-    const norm = code.toLowerCase();
-    const exact = voices.filter(v => v.lang.replace('_', '-').toLowerCase() === norm);
-    const loose = voices.filter(v => v.lang.replace('_', '-').toLowerCase().startsWith(norm));
-    const list = exact.length ? exact : loose;
-    if (list.length) {
-      // Prefer on-device voices so speech works with no internet.
-      return list.find(v => v.localService) || list[0];
-    }
+    const c = code.toLowerCase();
+    const list = voices.filter(v => norm(v) === c).concat(voices.filter(v => norm(v).startsWith(c)));
+    if (list.length) return list.find(v => NICE.test(v.name)) || list.find(v => v.localService) || list[0];
   }
   return null;
 }
@@ -137,8 +154,8 @@ function speakOne(text, lang, gen) {
     if (!synth || !state.settings.voice || (!v && lang !== 'en')) return finish();
     const u = new SpeechSynthesisUtterance(text);
     if (v) { u.voice = v; u.lang = v.lang; }
-    u.rate = lang === 'en' ? 0.92 : 0.8;
-    u.pitch = 1.1;
+    u.rate = state.settings.rate || 0.85;   // a little slower than normal speech
+    u.pitch = 1.05;
     u.onend = finish; u.onerror = finish;
     setTimeout(finish, 1200 + text.length * 120); // safety net: some engines never fire onend
     try { synth.speak(u); } catch { finish(); }

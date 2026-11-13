@@ -11,6 +11,8 @@ const DEFAULTS = {
     voice: true,
     langs: { pt: true, af: true },
     limitMin: 0,          // 0 = no limit
+    rate: 0.85,           // speaking speed
+    voiceName: '',        // '' = pick the best voice automatically
   },
   usage: { day: '', minutes: 0, extra: 0 },
 };
