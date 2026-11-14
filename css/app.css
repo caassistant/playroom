@@ -289,3 +289,8 @@ img, svg { -webkit-user-drag: none; }
 .tile { min-height: 0; padding: 12px 10px 14px; justify-content: flex-start; gap: 6px; }
 .tile .art { width: auto; height: clamp(72px, 15vh, 128px); max-width: none; flex: none; }
 .tile .title { font-size: clamp(18px, 2.4vw, 24px); line-height: 1.15; text-align: center; margin-top: 0; }
+
+/* Grown-up gate: nothing in it can be selected or long-press-highlighted (that cancelled the hold on Android). */
+.gate, .gate * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+.hold { touch-action: none; cursor: pointer; }
+.hold .lock { font-size: 44px; pointer-events: none; }

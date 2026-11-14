@@ -279,10 +279,10 @@ function restScreenShow() {
 
 /* ---------------- Grown-up gate: hold for 3 seconds ---------------- */
 function parentGate(onPass) {
-  const m = el(`<div class="modal-back"><div class="modal" style="text-align:center">
+  const m = el(`<div class="modal-back gate"><div class="modal" style="text-align:center">
     <h3>Grown-ups only</h3>
-    <p>Press and hold the circle for 3 seconds.</p>
-    <div class="hold"><svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="68" fill="none" stroke="#eee" stroke-width="10"/><circle class="ring" cx="75" cy="75" r="68" fill="none" stroke="#3BB273" stroke-width="10" stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="427"/></svg><span>Hold</span></div>
+    <p>Press the circle and keep your finger on it for 3 seconds.</p>
+    <div class="hold"><svg viewBox="0 0 150 150"><circle cx="75" cy="75" r="68" fill="none" stroke="#eee" stroke-width="10"/><circle class="ring" cx="75" cy="75" r="68" fill="none" stroke="#3BB273" stroke-width="10" stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="427"/></svg><span class="lock">🔒</span></div>
     <div class="footer" style="justify-content:center"><button class="btn ghost">Cancel</button></div>
   </div></div>`);
   document.body.appendChild(m);
@@ -415,7 +415,7 @@ document.addEventListener('dblclick', e => e.preventDefault());
 
 show('profiles', profilesScreen);
 
-export const APP_VERSION = 8;
+export const APP_VERSION = 9;
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {

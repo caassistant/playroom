@@ -1,6 +1,6 @@
 // Offline-first service worker: every file the app needs is stored on the tablet.
 // Bump VERSION whenever files change so tablets pick up the update next time they're online.
-const VERSION = 'playroom-v8';
+const VERSION = 'playroom-v9';
 const FILES = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css', 'fonts/nunito.woff2',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png',
@@ -12,7 +12,7 @@ const FILES = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
