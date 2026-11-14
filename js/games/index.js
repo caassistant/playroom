@@ -45,7 +45,7 @@ export const GAMES = [
   { id: 'racer',     title: 'Turbo Track',   icon: '🏎️', mascot: 'bo',     arcade: true, bg: '#1E1838', dark: true, modes: ['little', 'big'], maxLevel: 20, start: racer },
   { id: 'maze',      title: 'Maze Muncher',  icon: '🐟', mascot: 'mango',  arcade: true, bg: '#1E1838', dark: true, modes: ['little', 'big'], maxLevel: 20, start: maze },
   { id: 'bricks',    title: 'Brick Bounce',  icon: '🧱', mascot: 'zuzu',   arcade: true, bg: '#1E1838', dark: true, modes: ['little', 'big'], maxLevel: 30, start: bricks },
-  { id: 'blockdrop', title: 'Block Drop',    icon: '🟪', mascot: 'tumble', arcade: true, bg: '#1E1838', dark: true, modes: ['big'],           maxLevel: 20, start: blockdrop },
+  { id: 'blockdrop', title: 'Block Drop',    icon: '🟪', mascot: 'tumble', arcade: true, bg: '#1E1838', dark: true, modes: ['big'],           endless: true, start: blockdrop },
   { id: 'rumble',    title: 'Robo Rumble',   icon: '🥊', mascot: 'bo',     arcade: true, bg: '#1E1838', dark: true, modes: ['big'],           maxLevel: 20, start: rumble },
   { id: 'snake', title: 'Snake Trail', icon: '🐛', mascot: 'tumble', arcade: true, dark: true, bg: '#1E1838', modes: ['little', 'big'], maxLevel: 20, start: snake },
   { id: 'hop', title: 'Hop Across', icon: '🐸', mascot: 'tumble', arcade: true, dark: true, bg: '#1E1838', modes: ['little', 'big'], maxLevel: 20, start: hop },

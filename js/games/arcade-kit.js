@@ -1,6 +1,7 @@
 // Shared helpers for the arcade games: a crisp scaled canvas, big touch buttons,
 // swipe gestures, keyboard support and a pausable game loop.
 import { character } from '../characters.js';
+import { state } from '../store.js';
 
 /**
  * Layout: [left buttons] [canvas] [right buttons] in landscape,
@@ -8,6 +9,8 @@ import { character } from '../characters.js';
  * The canvas has a fixed logical size (w x h) and is scaled to fit.
  */
 export function arcadeLayout(stage, { w, h, left = [], right = [] }) {
+  // Right-handed by default: a single control pad sits on the right. "Left-handed" mirrors everything.
+  if (state.settings.leftHanded) [left, right] = [right, left];
   stage.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'arcade';

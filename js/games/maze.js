@@ -104,7 +104,7 @@ export default function start(ctx) {
   const exitX = (COLS - 1) / 2, exitY = Math.floor(ROWS / 2) - 2;
   const A = arcadeLayout(ctx.stage, {
     w: COLS * T, h: ROWS * T + HUD,
-    left: [[null, { id: 'up', label: '▲' }, null], [{ id: 'left', label: '◀' }, { id: 'down', label: '▼' }, { id: 'right', label: '▶' }]],
+    right: [[null, { id: 'up', label: '▲' }, null], [{ id: 'left', label: '◀' }, { id: 'down', label: '▼' }, { id: 'right', label: '▶' }]],
   });
   const { g } = A;
   const fx = particles(), txt = popups();

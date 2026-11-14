@@ -76,12 +76,12 @@ function hubScreenShow() {
     const grid = s.querySelector('.hub-grid');
     GAMES.filter(g => g.modes.includes(p.mode) && !!g.arcade === (tab === 'arcade')).forEach(g => {
       const done = Object.keys((p.lstars || {})[g.id] || {}).length;
-      const best = done ? `Lv ${Math.min(unlockedLevel(p, g), maxLevelFor(g, p))}` : '';
+      const best = g.endless ? ((p.hiscore || {})[g.id] ? `🏆 ${p.hiscore[g.id]}` : '') : done ? `Lv ${Math.min(unlockedLevel(p, g), maxLevelFor(g, p))}` : '';
       const t = el(`<button class="tile${g.arcade ? ' arcade-tile' : ''}" style="background:${g.color || '#2B2140'}">
         <div class="tstars">${best}</div>
         <div class="art">${character(g.mascot, { mood: 'happy' })}<span class="badge">${g.icon}</span></div>
         <div class="title">${esc(g.title)}</div></button>`);
-      t.onclick = () => { sfx.tap(); levelMap(g); };
+      t.onclick = () => { sfx.tap(); g.endless ? startGame(g, 1) : levelMap(g); };
       grid.appendChild(t);
     });
     root.appendChild(s);
@@ -145,7 +145,7 @@ function startGame(g, level) {
       <div class="topbar">
         <button class="round-btn home" aria-label="Home">${ICON.home}</button>
         <button class="round-btn speak" aria-label="Say it again">${ICON.sound}</button>
-        <div class="level-chip">Level ${level}</div>
+        <div class="level-chip">${g.endless ? `🏆 ${(p.hiscore || {})[g.id] || 0}` : `Level ${level}`}</div>
         <div class="spacer"></div>
         <div class="dots"></div>
         <div class="spacer"></div>
@@ -188,7 +188,7 @@ function startGame(g, level) {
         ctx.mascot('think');
         if (text) say(text);
       },
-      finish(stars) {
+      finish(stars, info = {}) {
         if (finished) return; finished = true;
         stars = Math.max(1, Math.min(3, stars | 0));
         p.stars += stars;
@@ -198,11 +198,16 @@ function startGame(g, level) {
         p.unlocked = p.unlocked || {};
         p.unlocked[g.id] = Math.max(unlockedLevel(p, g), Math.min(maxL, level + 1));
         save();
+        if (g.endless) {
+          save();
+          celebrate(stars, () => startGame(g, 1), () => hubScreenShow(), null, level, info.newBest ? 'New high score!' : null);
+          return;
+        }
         const hasNext = level < maxL;
         celebrate(stars, () => startGame(g, level), () => levelMap(g), hasNext ? () => startGame(g, level + 1) : null, level);
       },
     };
-    s.querySelector('.home').onclick = () => { sfx.tap(); levelMap(g); };
+    s.querySelector('.home').onclick = () => { sfx.tap(); g.endless ? hubScreenShow() : levelMap(g); };
     s.querySelector('.speak').onclick = () => { if (instruction) say(instruction); };
     gameCleanup = g.start(ctx);
     return () => {
@@ -215,10 +220,10 @@ function startGame(g, level) {
 }
 
 /* ---------------- Celebration: confetti, stars, pop-able balloons ---------------- */
-function celebrate(stars, again, home, next, level) {
+function celebrate(stars, again, home, next, level, headline) {
     const c = el(`<div class="celebrate">
     <div class="panel">
-      <h2>${esc(pick(PRAISE))}</h2>
+      <h2>${esc(headline || pick(PRAISE))}</h2>
       <div class="won-stars">${[0, 1, 2].map(i => `<span class="${i < stars ? '' : 'dim'}">⭐</span>`).join('')}</div>
       <div class="actions">
         ${next ? `<button class="big-btn next-btn" aria-label="Next level">Level ${level + 1} ▶</button>` : ''}
@@ -312,12 +317,14 @@ function settingsModal() {
       <button class="btn ghost vtest">▶ Test</button></div>
     <div class="row"><label>Show words on screen<div class="note">Captions of everything that is said. "Auto" shows them when the tablet can't speak.</div></label>
       <div class="seg caps"><button data-v="auto">Auto</button><button data-v="on">On</button><button data-v="off">Off</button></div></div>
+    <div class="row"><label>Left-handed controls<div class="note">Swaps the arcade buttons to the other side.</div></label><button class="toggle" data-k="leftHanded"></button></div>
     <div class="row"><label>Daily play time<div class="note used"></div></label>
       <select class="limit">${[0, 10, 15, 20, 30, 45, 60].map(v => `<option value="${v}">${v ? v + ' minutes' : 'No limit'}</option>`).join('')}</select></div>
     <div class="row"><label>Play time used up?</label><button class="btn ghost more">+10 minutes today</button></div>
+    <div class="row"><label>App version <b>${APP_VERSION}</b><div class="note upd-note">Updates download by themselves when the app opens with internet.</div></label><button class="btn upd">🔄 Check for updates</button></div>
     <div class="row"><label>Start everyone's stars and levels again</label><button class="btn danger reset">Reset</button></div>
     <div class="footer"><button class="btn done">Done</button></div>
-    <p class="note" style="margin-top:14px">Playroom · made at home with love · works offline</p>
+    <p class="note" style="margin-top:14px">Playroom · version ${APP_VERSION} · made at home with love · works offline</p>
   </div></div>`);
   const kids = m.querySelector('.kids');
   state.profiles.forEach(p => {
@@ -356,6 +363,27 @@ function settingsModal() {
   m.querySelectorAll('.rate button').forEach(b => b.onclick = () => { S.rate = +b.dataset.v; save(); paintRate(); say('Hello! Shall we play a game?'); });
   paintRate();
   m.querySelector('.vtest').onclick = () => say('Hello! Well done, you are a superstar! Shall we play a game?');
+  m.querySelector('.upd').onclick = async e => {
+    const note = m.querySelector('.upd-note'), btn = e.currentTarget;
+    if (!navigator.onLine) { note.textContent = 'Connect to Wi-Fi first, then try again.'; return; }
+    btn.disabled = true; note.textContent = 'Checking…';
+    try {
+      const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+      const latest = (await r.json()).version;
+      if (latest > APP_VERSION) {
+        note.textContent = `Updating to version ${latest}…`;
+        const reg = await navigator.serviceWorker?.getRegistration();
+        if (reg) await reg.update().catch(() => {});
+        setTimeout(() => location.reload(), 1200);
+      } else {
+        note.textContent = `You have the newest version (${APP_VERSION}).`;
+        btn.disabled = false;
+      }
+    } catch {
+      note.textContent = 'Couldn\'t reach the internet. Try again later.';
+      btn.disabled = false;
+    }
+  };
   const paintCaps = () => m.querySelectorAll('.caps button').forEach(b => b.classList.toggle('on', b.dataset.v === (S.captions || 'auto')));
   m.querySelectorAll('.caps button').forEach(b => b.onclick = () => { S.captions = b.dataset.v; save(); paintCaps(); });
   paintCaps();
@@ -387,6 +415,17 @@ document.addEventListener('dblclick', e => e.preventDefault());
 
 show('profiles', profilesScreen);
 
+export const APP_VERSION = 8;
+
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+    // Look for a new version whenever the app is opened or brought back to the front.
+    const check = () => { if (navigator.onLine) reg.update().catch(() => {}); };
+    check();
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  }).catch(() => {});
+  // When a new version takes over, reload, but only on the profile screen so no game is interrupted.
+  let pendingReload = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { pendingReload = true; if (current.screen === 'profiles') location.reload(); });
+  setInterval(() => { if (pendingReload && current.screen === 'profiles') location.reload(); }, 2000);
 }

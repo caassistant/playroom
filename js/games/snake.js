@@ -67,7 +67,7 @@ export default function start(ctx) {
   const golden = L >= 5;
   const A = arcadeLayout(ctx.stage, {
     w: W, h: H,
-    left: [[null, { id: 'up', label: '▲' }, null], [{ id: 'left', label: '◀' }, { id: 'down', label: '▼' }, { id: 'right', label: '▶' }]],
+    right: [[null, { id: 'up', label: '▲' }, null], [{ id: 'left', label: '◀' }, { id: 'down', label: '▼' }, { id: 'right', label: '▶' }]],
   });
   const { g } = A;
   const fx = particles(), txt = popups();
