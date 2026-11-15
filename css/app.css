@@ -294,3 +294,9 @@ img, svg { -webkit-user-drag: none; }
 .gate, .gate * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
 .hold { touch-action: none; cursor: pointer; }
 .hold .lock { font-size: 44px; pointer-events: none; }
+
+/* In-game "swap buttons to the other side" control */
+.hand-swap { position: absolute; top: 0; right: 0; z-index: 6;
+  width: 52px; height: 40px; border-radius: 20px; background: rgba(255,255,255,.85); box-shadow: 0 3px 0 rgba(0,0,0,.2);
+  font-size: 24px; display: grid; place-items: center; opacity: .8; }
+.arcade .pad.empty { display: none; }

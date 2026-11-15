@@ -92,8 +92,8 @@ export default function start(ctx) {
 
   function interval() {
     const k = (L - 1) / 19; // 0..1
-    if (little) return 0.36 - k * 0.13;
-    return Math.max(0.075, 0.2 - k * 0.1 - body.length * 0.0015);
+    if (little) return 0.55 - k * 0.27;                                   // 0.55s → 0.28s per step
+    return Math.max(0.09, 0.42 - k * 0.29 - body.length * 0.001);         // 0.42s → 0.13s per step
   }
 
   function want(d) {

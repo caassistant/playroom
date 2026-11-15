@@ -1,7 +1,7 @@
 // Shared helpers for the arcade games: a crisp scaled canvas, big touch buttons,
 // swipe gestures, keyboard support and a pausable game loop.
 import { character } from '../characters.js';
-import { state } from '../store.js';
+import { state, save } from '../store.js';
 
 /**
  * Layout: [left buttons] [canvas] [right buttons] in landscape,
@@ -9,8 +9,9 @@ import { state } from '../store.js';
  * The canvas has a fixed logical size (w x h) and is scaled to fit.
  */
 export function arcadeLayout(stage, { w, h, left = [], right = [] }) {
-  // Right-handed by default: a single control pad sits on the right. "Left-handed" mirrors everything.
-  if (state.settings.leftHanded) [left, right] = [right, left];
+  // Right-handed by default: a single control pad sits on the right. Left-handed players get it mirrored.
+  // Handedness belongs to the player (profile), and the ⇄ button in the game swaps it on the spot.
+  const prof = state.profiles.find(x => x.id === state.activeProfile);
   stage.innerHTML = '';
   const wrap = document.createElement('div');
   wrap.className = 'arcade';
@@ -69,6 +70,26 @@ export function arcadeLayout(stage, { w, h, left = [], right = [] }) {
     }
   }
 
+  // Swap the two button groups between the left and right side.
+  const padL = wrap.querySelector('.pad-l'), padR = wrap.querySelector('.pad-r');
+  function swapSides() {
+    const a = [...padL.childNodes], b = [...padR.childNodes];
+    padL.replaceChildren(...b); padR.replaceChildren(...a);
+    padL.classList.toggle('empty', !padL.childNodes.length); padR.classList.toggle('empty', !padR.childNodes.length);
+  }
+  let lefty = prof ? prof.hand === 'left' : false;
+  if (lefty) swapSides();
+  const hand = document.createElement('button');
+  hand.className = 'hand-swap';
+  hand.setAttribute('aria-label', 'Swap the buttons to the other side');
+  hand.innerHTML = '⇄';
+  hand.addEventListener('click', () => {
+    lefty = !lefty;
+    swapSides();
+    if (prof) { prof.hand = lefty ? 'left' : 'right'; save(); }
+  });
+  stage.appendChild(hand);
+
   // Keyboard (handy on a laptop for grown-ups testing).
   const KEYMAP = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', ' ': 'a', z: 'a', x: 'b', c: 'c', v: 'd', Enter: 'a' };
   const kd = e => { const id = KEYMAP[e.key]; if (!id) return; e.preventDefault(); if (!keys[id]) { keys[id] = true; pressHandlers.forEach(f => f(id)); } };
@@ -78,7 +99,7 @@ export function arcadeLayout(stage, { w, h, left = [], right = [] }) {
   return {
     canvas, g, w, h, keys, btns,
     onPress(f) { pressHandlers.push(f); },
-    destroy() { ro.disconnect(); removeEventListener('keydown', kd); removeEventListener('keyup', ku); },
+    destroy() { hand.remove(); ro.disconnect(); removeEventListener('keydown', kd); removeEventListener('keyup', ku); },
     /** Convert a pointer event to logical canvas coordinates. */
     toLocal(e) { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * w, y: (e.clientY - r.top) / r.height * h }; },
   };

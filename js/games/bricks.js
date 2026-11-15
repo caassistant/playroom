@@ -88,7 +88,7 @@ export default function start(ctx) {
   const breakable = () => bricks.filter(b => !b.steel).length;
   const total = breakable();
   let paddle = { x: W / 2, w: little ? 170 : Math.max(84, 116 - lvl), target: W / 2, bigT: 0 };
-  const baseSpeed = little ? Math.min(380, 280 + lvl * 4) : Math.min(560, 340 + lvl * 9);
+  const baseSpeed = little ? Math.min(400, 190 + lvl * 8) : Math.min(600, 240 + lvl * 12);   // slow start, faster each level
   let balls = [], lives = little ? Infinity : 3, score = 0, over = false, t = 0;
   const bg = BG[(lvl - 1) % BG.length];
   function serve() { balls = [{ x: paddle.x, y: H - 70, vx: 0, vy: 0, r: 11, stuck: true }]; }
@@ -164,7 +164,7 @@ export default function start(ctx) {
         const py = H - 50;
         if (ball.vy > 0 && ball.y + ball.r >= py && ball.y + ball.r <= py + 22 && Math.abs(ball.x - paddle.x) < pw / 2 + ball.r) {
           const k = (ball.x - paddle.x) / (pw / 2);
-          const sp = Math.min(baseSpeed * 1.5, Math.hypot(ball.vx, ball.vy) * 1.02);
+          const sp = Math.min(baseSpeed * 1.3, Math.hypot(ball.vx, ball.vy) * 1.02);
           const a = -Math.PI / 2 + k * 1.0;
           ball.vx = Math.cos(a) * sp; ball.vy = Math.sin(a) * sp;
           ball.y = py - ball.r;

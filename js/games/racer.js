@@ -26,7 +26,7 @@ export default function start(ctx) {
   const lvl = Math.max(1, ctx.level);
   const TH = THEMES[Math.floor((lvl - 1) / 4) % THEMES.length];
   const LAPS = little ? (lvl <= 6 ? 1 : 2) : (lvl <= 5 ? 2 : 3);
-  const MAX = little ? 6000 + lvl * 60 : 8000 + lvl * 120;
+  const MAX = little ? 3600 + lvl * 160 : 4600 + lvl * 260;   // level 1 is gentle, level 20 is fast
   const nCars = little ? Math.min(6, 3 + Math.floor(lvl / 5)) : Math.min(7, 4 + Math.floor(lvl / 5));
   ctx.dots(LAPS);
   const A = arcadeLayout(ctx.stage, {

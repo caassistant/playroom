@@ -43,6 +43,7 @@ function profilesScreen(root) {
     b.onclick = () => {
       unlockAudio(); sfx.tap();
       current.profile = p;
+      state.activeProfile = p.id;
       say(`Hi ${p.name}!`);
       hubScreenShow();
     };
@@ -81,7 +82,7 @@ function hubScreenShow() {
         <div class="tstars">${best}</div>
         <div class="art">${character(g.mascot, { mood: 'happy' })}<span class="badge">${g.icon}</span></div>
         <div class="title">${esc(g.title)}</div></button>`);
-      t.onclick = () => { sfx.tap(); g.endless ? startGame(g, 1) : levelMap(g); };
+      t.onclick = () => { sfx.tap(); g.endless ? startGame(g, 1) : startGame(g); };
       grid.appendChild(t);
     });
     root.appendChild(s);
@@ -99,7 +100,7 @@ function unlockedLevel(p, g) {
   return Math.max(1, p.unlocked[g.id] || 1);
 }
 
-function levelMap(g) {
+function levelMap(g, afterWin = false) {
   if (limitReached()) return restScreenShow();
   const p = current.profile;
   const max = maxLevelFor(g, p);
@@ -131,7 +132,7 @@ function levelMap(g) {
     root.appendChild(s);
     const nb = grid.querySelector('.next');
     if (nb) nb.scrollIntoView({ block: 'center' });
-    say(`${g.title}. Pick a level!`);
+    say(afterWin && open > 1 ? `Tap level ${open} to keep going!` : `${g.title}. Pick a level!`);
   });
 }
 
@@ -204,7 +205,7 @@ function startGame(g, level) {
           return;
         }
         const hasNext = level < maxL;
-        celebrate(stars, () => startGame(g, level), () => levelMap(g), hasNext ? () => startGame(g, level + 1) : null, level);
+        celebrate(stars, () => startGame(g, level), () => hubScreenShow(), () => levelMap(g, true), level, null, hasNext);
       },
     };
     s.querySelector('.home').onclick = () => { sfx.tap(); g.endless ? hubScreenShow() : levelMap(g); };
@@ -220,13 +221,13 @@ function startGame(g, level) {
 }
 
 /* ---------------- Celebration: confetti, stars, pop-able balloons ---------------- */
-function celebrate(stars, again, home, next, level, headline) {
+function celebrate(stars, again, home, next, level, headline, hasNext = false) {
     const c = el(`<div class="celebrate">
     <div class="panel">
       <h2>${esc(headline || pick(PRAISE))}</h2>
       <div class="won-stars">${[0, 1, 2].map(i => `<span class="${i < stars ? '' : 'dim'}">⭐</span>`).join('')}</div>
       <div class="actions">
-        ${next ? `<button class="big-btn next-btn" aria-label="Next level">Level ${level + 1} ▶</button>` : ''}
+        ${next ? `<button class="big-btn next-btn" aria-label="Choose the next level">${hasNext ? 'Next ▶' : 'Levels ▶'}</button>` : ''}
         <button class="big-btn again-btn ${next ? 'alt2' : ''}" aria-label="Play again">${ICON.again}</button>
         <button class="big-btn alt home-btn" aria-label="Levels">${ICON.homeW}</button>
       </div>
@@ -235,7 +236,7 @@ function celebrate(stars, again, home, next, level, headline) {
   sfx.tada();
   bigConfetti();
   const h2 = c.querySelector('h2');
-  say(next ? `${h2.textContent} On to level ${level + 1}!` : h2.textContent);
+  say(hasNext ? `${h2.textContent} Level ${level + 1} is ready!` : h2.textContent);
   c.querySelectorAll('.won-stars span').forEach((sp, i) => setTimeout(() => { sp.classList.add('in'); if (i < stars) sfx.star(i); }, 500 + i * 380));
   const stop = balloons(c, { total: 14 });
   c._stop = () => { stop(); c.remove(); };
@@ -317,7 +318,6 @@ function settingsModal() {
       <button class="btn ghost vtest">▶ Test</button></div>
     <div class="row"><label>Show words on screen<div class="note">Captions of everything that is said. "Auto" shows them when the tablet can't speak.</div></label>
       <div class="seg caps"><button data-v="auto">Auto</button><button data-v="on">On</button><button data-v="off">Off</button></div></div>
-    <div class="row"><label>Left-handed controls<div class="note">Swaps the arcade buttons to the other side.</div></label><button class="toggle" data-k="leftHanded"></button></div>
     <div class="row"><label>Daily play time<div class="note used"></div></label>
       <select class="limit">${[0, 10, 15, 20, 30, 45, 60].map(v => `<option value="${v}">${v ? v + ' minutes' : 'No limit'}</option>`).join('')}</select></div>
     <div class="row"><label>Play time used up?</label><button class="btn ghost more">+10 minutes today</button></div>
@@ -332,6 +332,7 @@ function settingsModal() {
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <input type="text" maxlength="16" value="${esc(p.name)}" aria-label="Name">
         <div class="seg mode"><button data-v="little">Little (3–4)</button><button data-v="big">Big (5–7)</button></div>
+        <div class="seg hand"><button data-h="right">✋ Right-handed</button><button data-h="left">🤚 Left-handed</button></div>
       </div>
       <div class="avatars" style="display:flex;gap:8px;margin-top:8px">${Object.keys(CAST).map(k => `<button data-a="${k}" style="width:56px;height:56px;border-radius:14px;padding:4px">${character(k)}</button>`).join('')}</div>
     </div>`);
@@ -341,7 +342,9 @@ function settingsModal() {
     r.querySelectorAll('.mode button').forEach(b => b.onclick = () => { p.mode = b.dataset.v; save(); paintMode(); });
     const paintAv = () => r.querySelectorAll('[data-a]').forEach(b => b.style.background = b.dataset.a === p.avatar ? '#FFE9C2' : 'transparent');
     r.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { p.avatar = b.dataset.a; save(); paintAv(); });
-    paintMode(); paintAv();
+    const paintHand = () => r.querySelectorAll('.hand button').forEach(b => b.classList.toggle('on', b.dataset.h === (p.hand || 'right')));
+    r.querySelectorAll('.hand button').forEach(b => b.onclick = () => { p.hand = b.dataset.h; save(); paintHand(); });
+    paintMode(); paintAv(); paintHand();
     kids.appendChild(r);
   });
   const paint = () => {
@@ -415,7 +418,7 @@ document.addEventListener('dblclick', e => e.preventDefault());
 
 show('profiles', profilesScreen);
 
-export const APP_VERSION = 9;
+export const APP_VERSION = 10;
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
