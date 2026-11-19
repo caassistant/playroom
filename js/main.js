@@ -146,6 +146,7 @@ function startGame(g, level) {
       <div class="topbar">
         <button class="round-btn home" aria-label="Home">${ICON.home}</button>
         <button class="round-btn speak" aria-label="Say it again">${ICON.sound}</button>
+        <button class="round-btn talk" aria-label="Talking on or off"></button>
         <div class="level-chip">${g.endless ? `🏆 ${(p.hiscore || {})[g.id] || 0}` : `Level ${level}`}</div>
         <div class="spacer"></div>
         <div class="dots"></div>
@@ -163,10 +164,16 @@ function startGame(g, level) {
     let gameCleanup = null;
     const timers = new Set();
 
+    // Talking can be switched on/off per game (🗣️ button). Some games start with it off.
+    const talkOn = () => { const v = (state.settings.gameVoice || {})[g.id]; return v === undefined ? g.talk !== false : v; };
+    const gsay = (...a) => talkOn() ? say(...a) : Promise.resolve();
+    const gsayAll = (...a) => talkOn() ? sayAll(...a) : Promise.resolve();
+    const gsayAfter = (...a) => talkOn() ? sayAfter(...a) : Promise.resolve();
+
     const ctx = {
       stage, mode: p.mode, level, maxLevel: maxL, profile: p, root: s,
-      say, sayAll, sayAfter, sfx, wobble, bounce, sparkleAt,
-      instruct(text) { instruction = text; say(text); },
+      say: gsay, sayAll: gsayAll, sayAfter: gsayAfter, sfx, wobble, bounce, sparkleAt,
+      instruct(text) { instruction = text; gsay(text); },
       setInstruction(text) { instruction = text; },
       later(fn, ms) { const t = setTimeout(() => { timers.delete(t); if (!finished) fn(); }, ms); timers.add(t); return t; },
       dots(n) { s.querySelector('.dots').innerHTML = '<i></i>'.repeat(n); },
@@ -181,13 +188,13 @@ function startGame(g, level) {
         sfx.good();
         if (elm) { bounce(elm); if (sparkle) sparkleAt(elm); }
         ctx.mascot('cheer');
-        if (praise) say(pick(PRAISE));
+        if (praise) gsay(pick(PRAISE));
       },
       wrong(elm, text) {
         sfx.oops();
         if (elm) wobble(elm);
         ctx.mascot('think');
-        if (text) say(text);
+        if (text) gsay(text);
       },
       finish(stars, info = {}) {
         if (finished) return; finished = true;
@@ -201,15 +208,25 @@ function startGame(g, level) {
         save();
         if (g.endless) {
           save();
-          celebrate(stars, () => startGame(g, 1), () => hubScreenShow(), null, level, info.newBest ? 'New high score!' : null);
+          celebrate(stars, () => startGame(g, 1), () => hubScreenShow(), null, level, info.newBest ? 'New high score!' : null, false, !talkOn());
           return;
         }
         const hasNext = level < maxL;
-        celebrate(stars, () => startGame(g, level), () => hubScreenShow(), () => levelMap(g, true), level, null, hasNext);
+        celebrate(stars, () => startGame(g, level), () => hubScreenShow(), () => levelMap(g, true), level, null, hasNext, !talkOn());
       },
     };
     s.querySelector('.home').onclick = () => { sfx.tap(); g.endless ? hubScreenShow() : levelMap(g); };
+    // The 🔊 button always says the instruction, even when talking is switched off.
     s.querySelector('.speak').onclick = () => { if (instruction) say(instruction); };
+    const talkBtn = s.querySelector('.talk');
+    const paintTalk = () => { talkBtn.textContent = talkOn() ? '🗣️' : '🤫'; talkBtn.style.opacity = talkOn() ? '1' : '.6'; };
+    talkBtn.onclick = () => {
+      state.settings.gameVoice = state.settings.gameVoice || {};
+      state.settings.gameVoice[g.id] = !talkOn();
+      save(); paintTalk();
+      if (talkOn()) say('Talking on!'); else stopSpeech();
+    };
+    paintTalk();
     gameCleanup = g.start(ctx);
     return () => {
       finished = true;
@@ -221,7 +238,7 @@ function startGame(g, level) {
 }
 
 /* ---------------- Celebration: confetti, stars, pop-able balloons ---------------- */
-function celebrate(stars, again, home, next, level, headline, hasNext = false) {
+function celebrate(stars, again, home, next, level, headline, hasNext = false, quiet = false) {
     const c = el(`<div class="celebrate">
     <div class="panel">
       <h2>${esc(headline || pick(PRAISE))}</h2>
@@ -236,7 +253,7 @@ function celebrate(stars, again, home, next, level, headline, hasNext = false) {
   sfx.tada();
   bigConfetti();
   const h2 = c.querySelector('h2');
-  say(hasNext ? `${h2.textContent} Level ${level + 1} is ready!` : h2.textContent);
+  if (!quiet) say(hasNext ? `${h2.textContent} Level ${level + 1} is ready!` : h2.textContent);
   c.querySelectorAll('.won-stars span').forEach((sp, i) => setTimeout(() => { sp.classList.add('in'); if (i < stars) sfx.star(i); }, 500 + i * 380));
   const stop = balloons(c, { total: 14 });
   c._stop = () => { stop(); c.remove(); };
@@ -418,7 +435,7 @@ document.addEventListener('dblclick', e => e.preventDefault());
 
 show('profiles', profilesScreen);
 
-export const APP_VERSION = 10;
+export const APP_VERSION = 11;
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {

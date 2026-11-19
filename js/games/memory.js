@@ -29,8 +29,17 @@ function dots(n) {
   return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:8%;width:${cols * 20}%">${'<span style="aspect-ratio:1;border-radius:50%;background:#FF9F1C"></span>'.repeat(n)}</div>`;
 }
 
-// Build card pairs: each pair is [cardA, cardB] where card = { face, say, key }.
-function same(list) { return list.map(([e, n]) => { const c = { face: `<span style="font-size:1em">${e}</span>`, say: n, key: n }; return [c, c]; }); }
+// What to say when a pair is found, in proper English ("Two foxes!", "Two bunches of grapes!").
+const TWO = {
+  fish: 'Two fish', grapes: 'Two bunches of grapes', cheese: 'Two pieces of cheese', bread: 'Two loaves of bread',
+  corn: 'Two corn cobs', 'ice cream': 'Two ice creams', strawberry: 'Two strawberries', leaf: 'Two leaves',
+  cactus: 'Two cactuses', paints: 'Two paint boxes', books: 'Two piles of books', teddy: 'Two teddies', bus: 'Two buses',
+  fox: 'Two foxes', 'fire engine': 'Two fire engines', 'yo-yo': 'Two yo-yos', watermelon: 'Two watermelons',
+};
+const two = n => (TWO[n] || `Two ${/(s|x|ch|sh)$/.test(n) ? n + 'es' : n + 's'}`) + '!';
+
+// Build card pairs: each pair is [cardA, cardB] where card = { face, say, key, match }.
+function same(list) { return list.map(([e, n]) => { const c = { face: `<span style="font-size:1em">${e}</span>`, say: n, key: n, match: two(n) }; return [c, c]; }); }
 const MAKERS = {
   animals: n => same(shuffle(SETS.animals).slice(0, n)),
   food: n => same(shuffle(SETS.food).slice(0, n)),
@@ -38,9 +47,9 @@ const MAKERS = {
   nature: n => same(shuffle(SETS.nature).slice(0, n)),
   toys: n => same(shuffle(SETS.toys).slice(0, n)),
   mixed: n => same(shuffle([...SETS.animals, ...SETS.food, ...SETS.vehicles, ...SETS.nature, ...SETS.toys]).slice(0, n)),
-  colours: n => shuffle(COLORS).slice(0, n).map(([hex, name]) => { const c = { face: `<span style="display:block;width:70%;aspect-ratio:1;border-radius:50%;background:${hex};border:4px solid #2B2140"></span>`, say: name, key: name }; return [c, c]; }),
-  shapes: n => shuffle(SHAPES).slice(0, n).map((s, i) => { const c = { face: shapeSVG(s, COLORS[i % COLORS.length][0]), say: s, key: s }; return [c, c]; }),
-  dots: n => shuffle([1, 2, 3, 4, 5, 6, 7, 8]).slice(0, n).map(k => { const c = { face: dots(k), say: SAY_N[k], key: 'd' + k }; return [c, c]; }),
+  colours: n => shuffle(COLORS).slice(0, n).map(([hex, name]) => { const c = { face: `<span style="display:block;width:70%;aspect-ratio:1;border-radius:50%;background:${hex};border:4px solid #2B2140"></span>`, say: name, key: name, match: `Two ${name} ones!` }; return [c, c]; }),
+  shapes: n => shuffle(SHAPES).slice(0, n).map((s, i) => { const c = { face: shapeSVG(s, COLORS[i % COLORS.length][0]), say: s, key: s, match: two(s) }; return [c, c]; }),
+  dots: n => shuffle([1, 2, 3, 4, 5, 6, 7, 8]).slice(0, n).map(k => { const c = { face: dots(k), say: `${SAY_N[k]} dot${k > 1 ? 's' : ''}`, key: 'd' + k, match: `Both have ${SAY_N[k]} dot${k > 1 ? 's' : ''}!` }; return [c, c]; }),
   numDots: n => shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).slice(0, n).map(k => [
     { face: `<b style="font-size:.8em">${k}</b>`, say: SAY_N[k], key: 'n' + k }, { face: dots(k), say: SAY_N[k], key: 'n' + k }]),
   letters: n => shuffle('ABDEFGHLMNQRT'.split('')).slice(0, n).map(L => [
@@ -122,7 +131,7 @@ export default function start(ctx) {
       setTimeout(() => {
         ctx.right(b);
         ctx.sparkleAt(a, 20);
-        ctx.say(different ? 'They go together!' : `A pair of ${a._card.say}!`);
+        ctx.say(different ? 'They go together!' : (a._card.match || 'A match!'));
         [a, b].forEach(x => x.querySelector('.inner').lastElementChild.style.boxShadow = '0 0 0 6px #FFD23F, 0 5px 0 rgba(0,0,0,.15)');
         if (matched === pairs) {
           const extra = moves - pairs;

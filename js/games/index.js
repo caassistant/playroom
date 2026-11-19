@@ -29,7 +29,7 @@ import homes from './homes.js';
 export const GAMES = [
   { id: 'bubbles',   title: 'Bubble Pop',    icon: '🫧', mascot: 'zuzu',   color: '#2EC4B6', bg: 'linear-gradient(#BDF1FF,#E6FAFF)', modes: ['little', 'big'], maxLevel: 20, start: bubbles },
   { id: 'sorter',    title: 'Shape Sorter',  icon: '🔺', mascot: 'tumble', color: '#3BB273', bg: '#EFFBEF', modes: ['little', 'big'], maxLevel: 20, start: sorter },
-  { id: 'memory',    title: 'Memory Match',  icon: '🧠', mascot: 'mango',  color: '#FF9F1C', bg: '#FFF4E0', modes: ['little', 'big'], maxLevel: 20, start: memory },
+  { id: 'memory', talk: false,    title: 'Memory Match',  icon: '🧠', mascot: 'mango',  color: '#FF9F1C', bg: '#FFF4E0', modes: ['little', 'big'], maxLevel: 20, start: memory },
   { id: 'colouring', title: 'Colouring',     icon: '🖍️', mascot: 'mango',  color: '#FF7EB6', bg: '#FFF0F6', modes: ['little', 'big'], maxLevel: 16, start: colouring },
   { id: 'words',     title: 'Word Builder',  icon: '🔤', mascot: 'bo',     color: '#3A86FF', bg: '#EEF4FF', modes: ['big'],           maxLevel: 30, start: words },
   { id: 'rocket',    title: 'Maths Rocket',  icon: '🚀', mascot: 'bo',     color: '#8E6CEF', bg: 'linear-gradient(#1E2A5A,#4B3F8F)', modes: ['little', 'big'], maxLevel: 30, dark: true, start: rocket },
